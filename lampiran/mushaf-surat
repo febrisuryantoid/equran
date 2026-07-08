@@ -1,0 +1,117 @@
+<style>
+#mushaf-surat {
+  direction: rtl;
+  font-family: 'LPMQ-IsepMisbah','Amiri','Noto Sans Arabic',Arial,Helvetica,sans-serif !important;
+  font-size: 2.25rem;
+  color: var(--theme-palette-color-4);
+  background: var(--theme-palette-color-8);
+  padding: 30px;
+  border-radius: 10px;
+  border: 1.5px solid var(--theme-palette-color-5);
+  box-shadow: 0 2px 5px 0 var(--theme-palette-color-5, 0.07);
+  text-align: justify;
+  line-height: 5rem;
+  margin: 0;
+  word-break: break-word;
+  position: relative;
+  overflow-x: auto;
+}
+@media (max-width:1024px) { #mushaf-surat { font-size: 2rem; padding: 25px; } }
+@media (max-width:767px) { #mushaf-surat { font-size: 1.85rem; padding: 20px; line-height: 3.25rem; } }
+
+#mushaf-surat .ayat-arab {
+  display: inline;
+  font-size: 1em;
+  cursor: pointer;
+  border-radius: 8px;
+  padding: 0 0.06em;
+  margin: 0 0.02em;
+  transition: color .15s;
+  vertical-align: middle;
+}
+#mushaf-surat .ayat-arab:hover,
+#mushaf-surat .ayat-arab.is-hover {
+  color: var(--theme-palette-color-1);
+}
+#mushaf-surat .ayat-nomor {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  font-family: inherit;
+  font-size: 2.1rem;
+  font-weight: 700;
+  color: var(--theme-palette-color-1);
+  background: var(--theme-palette-color-8);
+  margin: 0 0.08em;
+  min-width: 1.2em;
+  min-height: 1.2em;
+  padding: 0 0.22em;
+  border-radius: 50%;
+  text-align: center;
+  line-height: 1.1;
+  box-sizing: border-box;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: background .13s;
+  border: 2.2px solid var(--theme-palette-color-1);
+}
+@media (max-width:1024px) {
+  #mushaf-surat .ayat-nomor { font-size: 1.7rem; min-width: 1em; min-height: 1em; }
+}
+@media (max-width:767px) {
+  #mushaf-surat .ayat-nomor { font-size: 1.32rem; min-width: 0.95em; min-height: 0.95em; }
+}
+#mushaf-surat:after {
+  content: '';
+  display: inline-block;
+  width: 100%;
+}
+</style>
+
+<div id="mushaf-surat" data-surat="1"></div>
+<!-- Ganti "1" pada data-surat dengan Dynamic Tag ACF Elementor -->
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  const el = document.getElementById("mushaf-surat");
+  if (!el) return;
+  let nomorSurat = el.getAttribute("data-surat") || "1";
+  let nomorInt = parseInt(nomorSurat, 10);
+  if (isNaN(nomorInt) || nomorInt < 1 || nomorInt > 114) {
+    el.innerHTML = "Nomor surat tidak valid.";
+    return;
+  }
+  // Format nomor seperti di API (tanpa leading zero)
+  const url = `https://equran.id/api/v2/surat/${nomorInt}`;
+
+  fetch(url)
+    .then(res => res.json())
+    .then(json => {
+      const data = json.data || json;
+      const ayatList = data.ayat || [];
+      let html = '';
+      ayatList.forEach((a, i) => {
+        let arab = (a.teksArab || a.ar || '').replace(/[\u06DD\u06DE\u06E2\u06E3\u06E9\u06DF\u06E0\u06E1\u06E8\u06E6\u06E5\u06E4\u06E7۝]+$/g, '').trim();
+        let nomor = a.nomorAyat || a.nomor || (i + 1);
+        html += `<span class="ayat-arab" tabindex="0" data-idx="${i}">
+          ${arab}
+          <span class="ayat-nomor">${toArabicNum(nomor)}</span>
+        </span> `;
+      });
+      el.innerHTML = html;
+
+      // Hover/focus effect
+      el.querySelectorAll('.ayat-arab').forEach((ayat, i) => {
+        ayat.addEventListener('mouseenter', function() { ayat.classList.add('is-hover'); });
+        ayat.addEventListener('mouseleave', function() { ayat.classList.remove('is-hover'); });
+        ayat.addEventListener('focus', function() { ayat.classList.add('is-hover'); });
+        ayat.addEventListener('blur', function() { ayat.classList.remove('is-hover'); });
+      });
+    });
+
+  function toArabicNum(num) {
+    return String(num).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
+  }
+});
+</script>
